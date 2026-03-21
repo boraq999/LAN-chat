@@ -74,9 +74,9 @@ export const ChatArea: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full glass rounded-l-none border-l-0">
+    <div className="flex-1 flex flex-col h-full bg-white/5 md:glass md:rounded-l-none border-l-0">
       {/* Header */}
-      <div className="p-4 md:p-6 border-b border-white/10 flex items-center gap-4">
+      <div className="p-4 md:p-6 border-b border-white/10 flex items-center gap-4 bg-white/5 backdrop-blur-md">
         <button 
           onClick={() => setActiveChat(null)}
           className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-all"
@@ -84,11 +84,11 @@ export const ChatArea: React.FC = () => {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h2 className="text-xl md:text-2xl font-bold">
+          <h2 className="text-xl md:text-2xl font-bold truncate">
             {activeChat === 'all' ? 'General Chat' : activeChat}
           </h2>
           {activeChat !== 'all' && (
-            <div className="text-sm text-white/40">
+            <div className="text-xs md:text-sm text-white/40">
               {isTyping[activeChat] ? 'Typing...' : 'Direct Message'}
             </div>
           )}
@@ -96,7 +96,7 @@ export const ChatArea: React.FC = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
         {filteredMessages.map((msg, i) => {
           const isMe = msg.sender === currentUser;
           let content = msg.content;
@@ -107,12 +107,12 @@ export const ChatArea: React.FC = () => {
 
           return (
             <motion.div
-              initial={{ opacity: 0, x: isMe ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               key={i}
               className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[70%] group`}>
+              <div className={`max-w-[85%] md:max-w-[70%] group`}>
                 {!isMe && activeChat === 'all' && (
                   <div className="text-xs text-white/40 mb-1 ml-4">{msg.sender}</div>
                 )}
@@ -172,10 +172,10 @@ export const ChatArea: React.FC = () => {
       </div>
 
       {/* Input */}
-      <div className="p-6 border-t border-white/10">
+      <div className="p-4 md:p-6 border-t border-white/10 bg-white/5 backdrop-blur-md">
         <form 
           onSubmit={handleSend} 
-          className="flex items-center gap-4"
+          className="flex items-center gap-2 md:gap-4"
         >
           <div className="flex-1 relative">
             <input
@@ -183,16 +183,16 @@ export const ChatArea: React.FC = () => {
               value={input}
               onChange={handleInputChange}
               placeholder="Type a message..."
-              className="glass-input w-full py-4 pl-6 pr-24 text-lg"
+              className="glass-input w-full py-3 md:py-4 pl-4 md:pl-6 pr-12 md:pr-24 text-base md:text-lg"
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 hover:bg-white/10 rounded-xl transition-all text-white/60 hover:text-white"
                 disabled={uploading}
               >
-                <Paperclip className="w-6 h-6" />
+                <Paperclip className="w-5 h-5 md:w-6 h-6" />
               </button>
               <input
                 type="file"
@@ -206,9 +206,9 @@ export const ChatArea: React.FC = () => {
           <button
             type="submit"
             disabled={uploading || !input.trim()}
-            className={`glass-button h-[60px] w-[60px] flex items-center justify-center rounded-2xl p-0 ${!input.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`glass-button h-[48px] md:h-[60px] w-[48px] md:w-[60px] flex items-center justify-center rounded-xl md:rounded-2xl p-0 ${!input.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Send className="w-6 h-6" />
+            <Send className="w-5 h-5 md:w-6 h-6" />
           </button>
         </form>
       </div>

@@ -8,7 +8,7 @@ function ChatApp() {
   const { currentUser, activeChat } = useChat();
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex items-center justify-center p-0 md:p-8">
+    <div className="h-[100dvh] w-full overflow-hidden flex items-center justify-center p-0 md:p-8">
       <AnimatePresence mode="wait">
         {!currentUser ? (
           <Login key="login" />
@@ -18,12 +18,12 @@ function ChatApp() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full h-full max-w-7xl flex shadow-2xl rounded-3xl overflow-hidden border border-white/10"
+            className="w-full h-full max-w-7xl flex shadow-2xl md:rounded-3xl overflow-hidden md:border border-white/10"
           >
-            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 h-full`}>
+            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 h-full shrink-0`}>
               <Sidebar />
             </div>
-            <div className={`${activeChat ? 'flex' : 'hidden md:flex'} flex-1 h-full`}>
+            <div className={`${activeChat ? 'flex' : 'hidden md:flex'} flex-1 h-full min-w-0`}>
               <ChatArea />
             </div>
           </motion.div>
