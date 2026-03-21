@@ -5,7 +5,7 @@ import { ChatArea } from './components/ChatArea';
 import { motion, AnimatePresence } from 'motion/react';
 
 function ChatApp() {
-  const { currentUser } = useChat();
+  const { currentUser, activeChat } = useChat();
 
   return (
     <div className="h-screen w-screen overflow-hidden flex items-center justify-center p-0 md:p-8">
@@ -20,8 +20,12 @@ function ChatApp() {
             exit={{ opacity: 0, scale: 0.95 }}
             className="w-full h-full max-w-7xl flex shadow-2xl rounded-3xl overflow-hidden border border-white/10"
           >
-            <Sidebar />
-            <ChatArea />
+            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 h-full`}>
+              <Sidebar />
+            </div>
+            <div className={`${activeChat ? 'flex' : 'hidden md:flex'} flex-1 h-full`}>
+              <ChatArea />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

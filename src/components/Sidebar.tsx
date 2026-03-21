@@ -6,7 +6,7 @@ export const Sidebar: React.FC = () => {
   const { allUsers, onlineUsers, activeChat, setActiveChat, currentUser } = useChat();
 
   return (
-    <div className="w-80 glass border-r-0 rounded-r-none flex flex-col h-full">
+    <div className="w-full glass border-r-0 rounded-r-none flex flex-col h-full">
       <div className="p-6 border-b border-white/10">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Users className="w-6 h-6 text-blue-400" />

@@ -22,8 +22,8 @@ interface ChatContextType {
   onlineUsers: string[];
   allUsers: User[];
   messages: Message[];
-  activeChat: string; // 'all' or username
-  setActiveChat: (chat: string) => void;
+  activeChat: string | null; // 'all' or username
+  setActiveChat: (chat: string | null) => void;
   sendMessage: (content: string, type?: 'text' | 'file') => void;
   isTyping: Record<string, boolean>;
   setTyping: (isTyping: boolean) => void;
@@ -37,7 +37,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [activeChat, setActiveChat] = useState<string>('all');
+  const [activeChat, setActiveChat] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && activeChat) {
       fetch(`/api/messages/${currentUser}/${activeChat}`)
         .then(res => res.json())
         .then(data => setMessages(data));
@@ -81,7 +81,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser, activeChat]);
 
   const sendMessage = useCallback((content: string, type: 'text' | 'file' = 'text') => {
-    if (socket && currentUser) {
+    if (socket && currentUser && activeChat) {
       socket.emit('send-msg', {
         sender: currentUser,
         receiver: activeChat,
@@ -92,7 +92,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [socket, currentUser, activeChat]);
 
   const setTyping = useCallback((typing: boolean) => {
-    if (socket && currentUser) {
+    if (socket && currentUser && activeChat) {
       socket.emit(typing ? 'typing' : 'stop-typing', {
         sender: currentUser,
         receiver: activeChat

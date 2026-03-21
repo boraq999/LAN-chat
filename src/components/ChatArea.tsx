@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
-import { Send, Paperclip, Image as ImageIcon, FileText, X, Download } from 'lucide-react';
+import { Send, Paperclip, Image as ImageIcon, FileText, X, Download, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ChatArea: React.FC = () => {
-  const { messages, activeChat, currentUser, sendMessage, setTyping, isTyping } = useChat();
+  const { messages, activeChat, setActiveChat, currentUser, sendMessage, setTyping, isTyping } = useChat();
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   
@@ -62,12 +62,29 @@ export const ChatArea: React.FC = () => {
     ))
   );
 
+  if (!activeChat) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center glass rounded-l-none border-l-0 text-white/20">
+        <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-4">
+          <Send className="w-12 h-12" />
+        </div>
+        <p className="text-xl font-medium">Select a contact to start chatting</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full glass rounded-l-none border-l-0">
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="p-4 md:p-6 border-b border-white/10 flex items-center gap-4">
+        <button 
+          onClick={() => setActiveChat(null)}
+          className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-all"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
         <div>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl md:text-2xl font-bold">
             {activeChat === 'all' ? 'General Chat' : activeChat}
           </h2>
           {activeChat !== 'all' && (
