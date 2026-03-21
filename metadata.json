@@ -1,0 +1,8 @@
+{
+  "name": "LAN Chat Pro v2.0",
+  "description": "A lightweight, modern LAN-based chat application with Glassmorphism UI, real-time messaging, and file sharing.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
