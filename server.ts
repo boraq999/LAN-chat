@@ -1,17 +1,15 @@
 import express from "express";
-import { createServer as createHttpServer } from "http";
-import { createServer as createHttpsServer } from "https";
+import { createServer } from "http";
 import { Server } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
 import multer from "multer";
 import fs from "fs";
-import selfsigned from "selfsigned";
+import localtunnel from "localtunnel";
 import { initDb, saveMessage, getMessages, upsertUser, getAllUsers } from "./database.ts";
 
 const PORT = 3000;
-const USE_HTTPS = process.env.USE_HTTPS === "true" || process.env.NODE_ENV !== "production";
 
 // Ensure uploads directory exists
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -33,23 +31,8 @@ const upload = multer({ storage });
 async function startServer() {
   const db = await initDb();
   const app = express();
+  const httpServer = createServer(app);
   
-  let httpServer;
-  
-  if (USE_HTTPS) {
-    // Generate self-signed certificate for local development
-    const attrs = [{ name: 'commonName', value: 'localhost' }];
-    const pems = selfsigned.generate(attrs, { days: 365 });
-    
-    httpServer = createHttpsServer({
-      key: pems.private,
-      cert: pems.cert
-    }, app);
-    console.log("🔒 HTTPS enabled with self-signed certificate");
-  } else {
-    httpServer = createHttpServer(app);
-  }
-
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
@@ -147,9 +130,20 @@ async function startServer() {
     });
   }
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    const protocol = USE_HTTPS ? "https" : "http";
-    console.log(`🚀 Server running on ${protocol}://localhost:${PORT}`);
+  httpServer.listen(PORT, "0.0.0.0", async () => {
+    console.log(`🚀 Server running locally on http://localhost:${PORT}`);
+    
+    // Start localtunnel for secure public access
+    try {
+      const tunnel = await localtunnel({ port: PORT });
+      console.log(`🌐 Secure Public URL for Phone/Remote: ${tunnel.url}`);
+      
+      tunnel.on('close', () => {
+        console.log("Tunnel closed");
+      });
+    } catch (err) {
+      console.error("Error starting localtunnel:", err);
+    }
   });
 }
 
