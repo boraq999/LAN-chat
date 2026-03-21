@@ -13,6 +13,8 @@ export const ChatArea: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +36,25 @@ export const ChatArea: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     setTyping(e.target.value.length > 0);
+  };
+
+  const requestPermissionAndStart = async () => {
+    setShowPermissionModal(false);
+    await startRecording();
+  };
+
+  const handleMicClick = async () => {
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      if (permissionStatus.state === 'granted') {
+        startRecording();
+      } else {
+        setShowPermissionModal(true);
+      }
+    } catch (e) {
+      // Fallback if permissions API is not supported
+      setShowPermissionModal(true);
+    }
   };
 
   const startRecording = async () => {
@@ -330,7 +351,7 @@ export const ChatArea: React.FC = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={startRecording}
+                  onClick={handleMicClick}
                   disabled={uploading}
                   className="glass-button h-[60px] w-[60px] flex items-center justify-center rounded-2xl p-0 bg-blue-600/50"
                 >
@@ -341,6 +362,46 @@ export const ChatArea: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Permission Modal */}
+      <AnimatePresence>
+        {showPermissionModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="glass p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-white/20"
+            >
+              <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Mic className="w-8 h-8 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Microphone Access</h3>
+              <p className="text-white/60 mb-8">
+                We need your permission to access the microphone so you can record and send voice messages.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={requestPermissionAndStart}
+                  className="glass-button w-full py-3 text-lg"
+                >
+                  Grant Permission
+                </button>
+                <button 
+                  onClick={() => setShowPermissionModal(false)}
+                  className="p-3 text-white/40 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
