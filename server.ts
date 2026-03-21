@@ -148,7 +148,8 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    const protocol = USE_HTTPS ? "https" : "http";
+    console.log(`🚀 Server running on ${protocol}://localhost:${PORT}`);
   });
 }
 
