@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
-import { Send, Paperclip, Image as ImageIcon, FileText, X } from 'lucide-react';
+import { Send, Paperclip, Image as ImageIcon, FileText, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ChatArea: React.FC = () => {
@@ -104,14 +104,38 @@ export const ChatArea: React.FC = () => {
                     : 'bg-white/10 backdrop-blur-md border border-white/10 rounded-tl-none'
                 }`}>
                   {msg.type === 'file' && fileData ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {fileData.type.startsWith('image/') ? (
-                        <img src={fileData.url} alt="upload" className="max-w-full rounded-lg" referrerPolicy="no-referrer" />
+                        <div className="relative group/img">
+                          <img src={fileData.url} alt="upload" className="max-w-full rounded-lg" referrerPolicy="no-referrer" />
+                          <a 
+                            href={fileData.url} 
+                            download={fileData.filename}
+                            className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
+                          >
+                            <Download className="w-5 h-5 text-white" />
+                          </a>
+                        </div>
                       ) : (
-                        <a href={fileData.url} target="_blank" className="flex items-center gap-2 hover:underline">
-                          <FileText className="w-5 h-5" />
-                          <span>{fileData.filename}</span>
-                        </a>
+                        <div className="flex items-center justify-between gap-4 bg-white/5 p-3 rounded-xl border border-white/10">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 bg-blue-500/20 rounded-lg">
+                              <FileText className="w-6 h-6 text-blue-400" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium truncate">{fileData.filename}</div>
+                              <div className="text-[10px] opacity-50 uppercase">{fileData.type.split('/')[1]}</div>
+                            </div>
+                          </div>
+                          <a 
+                            href={fileData.url} 
+                            download={fileData.filename}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            title="Download"
+                          >
+                            <Download className="w-5 h-5" />
+                          </a>
+                        </div>
                       )}
                     </div>
                   ) : (
