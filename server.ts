@@ -1,14 +1,17 @@
 import express from "express";
-import { createServer } from "http";
+import { createServer as createHttpServer } from "http";
+import { createServer as createHttpsServer } from "https";
 import { Server } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
 import multer from "multer";
 import fs from "fs";
+import selfsigned from "selfsigned";
 import { initDb, saveMessage, getMessages, upsertUser, getAllUsers } from "./database.ts";
 
 const PORT = 3000;
+const USE_HTTPS = process.env.USE_HTTPS === "true" || process.env.NODE_ENV !== "production";
 
 // Ensure uploads directory exists
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -30,7 +33,23 @@ const upload = multer({ storage });
 async function startServer() {
   const db = await initDb();
   const app = express();
-  const httpServer = createServer(app);
+  
+  let httpServer;
+  
+  if (USE_HTTPS) {
+    // Generate self-signed certificate for local development
+    const attrs = [{ name: 'commonName', value: 'localhost' }];
+    const pems = selfsigned.generate(attrs, { days: 365 });
+    
+    httpServer = createHttpsServer({
+      key: pems.private,
+      cert: pems.cert
+    }, app);
+    console.log("🔒 HTTPS enabled with self-signed certificate");
+  } else {
+    httpServer = createHttpServer(app);
+  }
+
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
