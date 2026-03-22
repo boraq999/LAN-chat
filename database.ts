@@ -1,16 +1,12 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
+import Database from 'better-sqlite3';
 import path from 'path';
 
-let db: Database;
+let db: any;
 
 export async function initDb() {
-  db = await open({
-    filename: path.join(process.cwd(), 'chat.db'),
-    driver: sqlite3.Database
-  });
+  db = new Database(path.join(process.cwd(), 'chat.db'));
 
-  await db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE,
@@ -31,32 +27,25 @@ export async function initDb() {
 }
 
 export async function saveMessage(sender: string, receiver: string, content: string, type: string = 'text') {
-  return await db.run(
-    'INSERT INTO messages (sender, receiver, content, type) VALUES (?, ?, ?, ?)',
-    [sender, receiver, content, type]
-  );
+  const stmt = db.prepare('INSERT INTO messages (sender, receiver, content, type) VALUES (?, ?, ?, ?)');
+  return stmt.run(sender, receiver, content, type);
 }
 
 export async function getMessages(user1: string, user2: string) {
-  // Simple private chat query: messages between two users or group messages (if receiver is 'all')
   if (user2 === 'all') {
-    return await db.all(
-      'SELECT * FROM messages WHERE receiver = "all" ORDER BY timestamp ASC'
-    );
+    const stmt = db.prepare("SELECT * FROM messages WHERE receiver = 'all' ORDER BY timestamp ASC");
+    return stmt.all();
   }
-  return await db.all(
-    'SELECT * FROM messages WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?) ORDER BY timestamp ASC',
-    [user1, user2, user2, user1]
-  );
+  const stmt = db.prepare('SELECT * FROM messages WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?) ORDER BY timestamp ASC');
+  return stmt.all(user1, user2, user2, user1);
 }
 
 export async function upsertUser(username: string) {
-  return await db.run(
-    'INSERT INTO users (username, last_seen) VALUES (?, CURRENT_TIMESTAMP) ON CONFLICT(username) DO UPDATE SET last_seen = CURRENT_TIMESTAMP',
-    [username]
-  );
+  const stmt = db.prepare('INSERT INTO users (username, last_seen) VALUES (?, CURRENT_TIMESTAMP) ON CONFLICT(username) DO UPDATE SET last_seen = CURRENT_TIMESTAMP');
+  return stmt.run(username);
 }
 
 export async function getAllUsers() {
-  return await db.all('SELECT * FROM users ORDER BY last_seen DESC');
+  const stmt = db.prepare('SELECT * FROM users ORDER BY last_seen DESC');
+  return stmt.all();
 }

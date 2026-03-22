@@ -6,7 +6,7 @@ interface Message {
   sender: string;
   receiver: string;
   content: string;
-  type: 'text' | 'file';
+  type: 'text' | 'file' | 'voice';
   timestamp: string;
 }
 
@@ -24,7 +24,7 @@ interface ChatContextType {
   messages: Message[];
   activeChat: string | null; // 'all' or username
   setActiveChat: (chat: string | null) => void;
-  sendMessage: (content: string, type?: 'text' | 'file') => void;
+  sendMessage: (content: string, type?: 'text' | 'file' | 'voice') => void;
   isTyping: Record<string, boolean>;
   setTyping: (isTyping: boolean) => void;
 }
@@ -80,7 +80,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser, activeChat]);
 
-  const sendMessage = useCallback((content: string, type: 'text' | 'file' = 'text') => {
+  const sendMessage = useCallback((content: string, type: 'text' | 'file' | 'voice' = 'text') => {
     if (socket && currentUser && activeChat) {
       socket.emit('send-msg', {
         sender: currentUser,

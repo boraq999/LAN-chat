@@ -6,7 +6,6 @@ import path from "path";
 import cors from "cors";
 import multer from "multer";
 import fs from "fs";
-import localtunnel from "localtunnel";
 import { initDb, saveMessage, getMessages, upsertUser, getAllUsers } from "./database.ts";
 
 const PORT = 3000;
@@ -56,7 +55,19 @@ async function startServer() {
     res.json(users);
   });
 
-  app.post("/api/upload", upload.single("file"), (req, res) => {
+  app.post("/api/upload", (req, res, next) => {
+    upload.single("file")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        console.error("Multer error:", err);
+        return res.status(500).json({ error: err.message });
+      } else if (err) {
+        console.error("Unknown upload error:", err);
+        return res.status(500).json({ error: "Unknown upload error" });
+      }
+      next();
+    });
+  }, (req, res) => {
+    console.log("Upload request received:", req.file ? req.file.originalname : "No file");
     if (!req.file) return res.status(400).send("No file uploaded.");
     const fileUrl = `/uploads/${req.file.filename}`;
     res.json({ url: fileUrl, filename: req.file.originalname, type: req.file.mimetype });
@@ -132,18 +143,6 @@ async function startServer() {
 
   httpServer.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 Server running locally on http://localhost:${PORT}`);
-    
-    // Start localtunnel for secure public access
-    try {
-      const tunnel = await localtunnel({ port: PORT });
-      console.log(`🌐 Secure Public URL for Phone/Remote: ${tunnel.url}`);
-      
-      tunnel.on('close', () => {
-        console.log("Tunnel closed");
-      });
-    } catch (err) {
-      console.error("Error starting localtunnel:", err);
-    }
   });
 }
 

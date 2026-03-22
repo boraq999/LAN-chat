@@ -1,15 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
-import { Send, Paperclip, Image as ImageIcon, FileText, X, Download, ArrowLeft } from 'lucide-react';
+import { Send, Paperclip, Image as ImageIcon, FileText, X, Download, ArrowLeft, Mic, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ChatArea: React.FC = () => {
   const { messages, activeChat, setActiveChat, currentUser, sendMessage, setTyping, isTyping } = useChat();
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,6 +49,10 @@ export const ChatArea: React.FC = () => {
         method: 'POST',
         body: formData,
       });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Upload failed: ${res.status} ${errorText}`);
+      }
       const data = await res.json();
       sendMessage(JSON.stringify(data), 'file');
     } catch (err) {
@@ -52,6 +61,72 @@ export const ChatArea: React.FC = () => {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const file = new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+          setUploading(true);
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Upload failed: ${res.status} ${errorText}`);
+          }
+          const data = await res.json();
+          sendMessage(JSON.stringify(data), 'voice');
+        } catch (err) {
+          console.error('Voice upload failed', err);
+        } finally {
+          setUploading(false);
+        }
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Error accessing microphone', err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const filteredMessages = messages.filter(m => 
@@ -121,7 +196,14 @@ export const ChatArea: React.FC = () => {
                     ? 'bg-blue-600 text-white rounded-tr-none' 
                     : 'bg-white/10 backdrop-blur-md border border-white/10 rounded-tl-none'
                 }`}>
-                  {msg.type === 'file' && fileData ? (
+                  {msg.type === 'voice' && fileData ? (
+                    <div className="flex items-center gap-3 min-w-[200px]">
+                      <div className={`p-2 rounded-full ${isMe ? 'bg-white/20' : 'bg-blue-500/20'}`}>
+                        <Mic className={`w-5 h-5 ${isMe ? 'text-white' : 'text-blue-400'}`} />
+                      </div>
+                      <audio src={fileData.url} controls className="h-8 w-full max-w-[200px] filter brightness-110 contrast-125" />
+                    </div>
+                  ) : msg.type === 'file' && fileData ? (
                     <div className="space-y-3">
                       {fileData.type.startsWith('image/') ? (
                         <div className="relative group/img">
@@ -178,38 +260,64 @@ export const ChatArea: React.FC = () => {
           className="flex items-center gap-2 md:gap-4"
         >
           <div className="flex-1 relative">
-            <input
-              type="text"
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Type a message..."
-              className="glass-input w-full py-3 md:py-4 pl-4 md:pl-6 pr-12 md:pr-24 text-base md:text-lg"
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all text-white/60 hover:text-white"
-                disabled={uploading}
-              >
-                <Paperclip className="w-5 h-5 md:w-6 h-6" />
-              </button>
+            {isRecording ? (
+              <div className="glass-input w-full py-3 md:py-4 px-4 flex items-center justify-between bg-red-500/10 border-red-500/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  <span className="font-mono text-red-400">{formatTime(recordingTime)}</span>
+                </div>
+                <span className="text-sm text-red-400/60 animate-pulse">Recording...</span>
+              </div>
+            ) : (
               <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
+                type="text"
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Type a message..."
+                className="glass-input w-full py-3 md:py-4 pl-4 md:pl-6 pr-12 md:pr-24 text-base md:text-lg"
               />
+            )}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {!isRecording && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-white/10 rounded-xl transition-all text-white/60 hover:text-white"
+                    disabled={uploading}
+                  >
+                    <Paperclip className="w-5 h-5 md:w-6 h-6" />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </>
+              )}
             </div>
           </div>
           
-          <button
-            type="submit"
-            disabled={uploading || !input.trim()}
-            className={`glass-button h-[48px] md:h-[60px] w-[48px] md:w-[60px] flex items-center justify-center rounded-xl md:rounded-2xl p-0 ${!input.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Send className="w-5 h-5 md:w-6 h-6" />
-          </button>
+          {input.trim() || isRecording ? (
+            <button
+              type={isRecording ? "button" : "submit"}
+              onClick={isRecording ? stopRecording : undefined}
+              disabled={uploading}
+              className={`glass-button h-[48px] md:h-[60px] w-[48px] md:w-[60px] flex items-center justify-center rounded-xl md:rounded-2xl p-0 ${isRecording ? 'bg-red-600 hover:bg-red-500' : ''}`}
+            >
+              {isRecording ? <Square className="w-5 h-5 md:w-6 h-6" /> : <Send className="w-5 h-5 md:w-6 h-6" />}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={startRecording}
+              disabled={uploading}
+              className="glass-button h-[48px] md:h-[60px] w-[48px] md:w-[60px] flex items-center justify-center rounded-xl md:rounded-2xl p-0 bg-white/10 hover:bg-white/20"
+            >
+              <Mic className="w-5 h-5 md:w-6 h-6" />
+            </button>
+          )}
         </form>
       </div>
     </div>
