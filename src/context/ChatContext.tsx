@@ -19,6 +19,8 @@ interface ChatContextType {
   socket: Socket | null;
   currentUser: string | null;
   setCurrentUser: (user: string) => void;
+  serverUrl: string;
+  setServerUrl: (url: string) => void;
   onlineUsers: string[];
   allUsers: User[];
   messages: Message[];
@@ -34,6 +36,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [currentUser, setCurrentUser] = useState<string | null>(localStorage.getItem('chat_username'));
+  const [serverUrl, setServerUrl] = useState<string>(localStorage.getItem('chat_server_url') || window.location.origin);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,7 +44,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const newSocket = io(window.location.origin);
+    const newSocket = io(serverUrl);
     setSocket(newSocket);
 
     if (currentUser) {
@@ -70,15 +73,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       newSocket.disconnect();
     };
-  }, [currentUser]);
+  }, [currentUser, serverUrl]);
 
   useEffect(() => {
     if (currentUser && activeChat) {
-      fetch(`/api/messages/${currentUser}/${activeChat}`)
+      fetch(`${serverUrl}/api/messages/${currentUser}/${activeChat}`)
         .then(res => res.json())
         .then(data => setMessages(data));
     }
-  }, [currentUser, activeChat]);
+  }, [currentUser, activeChat, serverUrl]);
 
   const sendMessage = useCallback((content: string, type: 'text' | 'file' | 'voice' = 'text') => {
     if (socket && currentUser && activeChat) {
@@ -107,6 +110,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser: (user) => {
         localStorage.setItem('chat_username', user);
         setCurrentUser(user);
+      },
+      serverUrl,
+      setServerUrl: (url) => {
+        localStorage.setItem('chat_server_url', url);
+        setServerUrl(url);
       },
       onlineUsers,
       allUsers,

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useChat } from '../context/ChatContext';
-import { User, LogIn } from 'lucide-react';
+import { User, LogIn, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const Login: React.FC = () => {
+  const { setCurrentUser, serverUrl, setServerUrl } = useChat();
   const [username, setUsername] = useState('');
-  const { setCurrentUser } = useChat();
+  const [url, setUrl] = useState(serverUrl);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim()) {
+    if (username.trim() && url.trim()) {
+      setServerUrl(url.trim());
       setCurrentUser(username.trim());
     }
   };
@@ -25,9 +27,19 @@ export const Login: React.FC = () => {
           <LogIn className="w-10 h-10 text-blue-400" />
         </div>
         <h1 className="text-3xl font-bold mb-2">LAN Chat Pro</h1>
-        <p className="text-white/60 mb-8">Enter your username to start chatting</p>
+        <p className="text-white/60 mb-8">Enter your details to start chatting</p>
         
         <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative">
+            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <input
+              type="text"
+              placeholder="Server URL (e.g. http://192.168.1.5:3000)"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="glass-input w-full pl-12 py-3 text-lg"
+            />
+          </div>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input

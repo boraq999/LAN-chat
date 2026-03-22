@@ -4,7 +4,7 @@ import { Send, Paperclip, Image as ImageIcon, FileText, X, Download, ArrowLeft, 
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ChatArea: React.FC = () => {
-  const { messages, activeChat, setActiveChat, currentUser, sendMessage, setTyping, isTyping } = useChat();
+  const { messages, activeChat, setActiveChat, currentUser, sendMessage, setTyping, isTyping, serverUrl } = useChat();
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -45,7 +45,7 @@ export const ChatArea: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`${serverUrl}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -85,7 +85,7 @@ export const ChatArea: React.FC = () => {
         
         try {
           setUploading(true);
-          const res = await fetch('/api/upload', {
+          const res = await fetch(`${serverUrl}/api/upload`, {
             method: 'POST',
             body: formData,
           });
@@ -201,15 +201,15 @@ export const ChatArea: React.FC = () => {
                       <div className={`p-2 rounded-full ${isMe ? 'bg-white/20' : 'bg-blue-500/20'}`}>
                         <Mic className={`w-5 h-5 ${isMe ? 'text-white' : 'text-blue-400'}`} />
                       </div>
-                      <audio src={fileData.url} controls className="h-8 w-full max-w-[200px] filter brightness-110 contrast-125" />
+                      <audio src={fileData.url.startsWith('http') ? fileData.url : `${serverUrl}${fileData.url}`} controls className="h-8 w-full max-w-[200px] filter brightness-110 contrast-125" />
                     </div>
                   ) : msg.type === 'file' && fileData ? (
                     <div className="space-y-3">
                       {fileData.type.startsWith('image/') ? (
                         <div className="relative group/img">
-                          <img src={fileData.url} alt="upload" className="max-w-full rounded-lg" referrerPolicy="no-referrer" />
+                          <img src={fileData.url.startsWith('http') ? fileData.url : `${serverUrl}${fileData.url}`} alt="upload" className="max-w-full rounded-lg" referrerPolicy="no-referrer" />
                           <a 
-                            href={fileData.url} 
+                            href={fileData.url.startsWith('http') ? fileData.url : `${serverUrl}${fileData.url}`} 
                             download={fileData.filename}
                             className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
                           >
@@ -228,7 +228,7 @@ export const ChatArea: React.FC = () => {
                             </div>
                           </div>
                           <a 
-                            href={fileData.url} 
+                            href={fileData.url.startsWith('http') ? fileData.url : `${serverUrl}${fileData.url}`} 
                             download={fileData.filename}
                             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                             title="Download"
