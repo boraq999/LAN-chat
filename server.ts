@@ -1,5 +1,6 @@
 import express from "express";
 import { createServer } from "http";
+import { createServer as createHttpsServer } from "https";
 import { Server } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -10,6 +11,7 @@ import localtunnel from "localtunnel";
 import { initDb, saveMessage, getMessages, upsertUser, getAllUsers } from "./database.ts";
 
 const PORT = 3000;
+const HTTPS_PORT = 3443;
 
 // Ensure uploads directory exists
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -31,9 +33,26 @@ const upload = multer({ storage });
 async function startServer() {
   const db = await initDb();
   const app = express();
-  const httpServer = createServer(app);
   
-  const io = new Server(httpServer, {
+  // Load or generate SSL certificate
+  const certDir = path.join(process.cwd(), 'certs');
+  let httpsOptions;
+  
+  if (fs.existsSync(path.join(certDir, 'key.pem')) && fs.existsSync(path.join(certDir, 'cert.pem'))) {
+    httpsOptions = {
+      key: fs.readFileSync(path.join(certDir, 'key.pem')),
+      cert: fs.readFileSync(path.join(certDir, 'cert.pem'))
+    };
+    console.log('📜 استخدام الشهادات من مجلد certs/');
+  } else {
+    console.log('⚠️  لم يتم العثور على شهادات، قم بتشغيل: npx tsx generate-cert.ts');
+    process.exit(1);
+  }
+  
+  const httpServer = createServer(app);
+  const httpsServer = createHttpsServer(httpsOptions, app);
+  
+  const io = new Server(httpsServer, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
@@ -130,13 +149,17 @@ async function startServer() {
     });
   }
 
-  httpServer.listen(PORT, "0.0.0.0", async () => {
-    console.log(`🚀 Server running locally on http://localhost:${PORT}`);
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 HTTP Server: http://localhost:${PORT}`);
+  });
+  
+  httpsServer.listen(HTTPS_PORT, "0.0.0.0", async () => {
+    console.log(`🔒 HTTPS Server: https://localhost:${HTTPS_PORT}`);
     
     // Start localtunnel for secure public access
     try {
-      const tunnel = await localtunnel({ port: PORT });
-      console.log(`🌐 Secure Public URL for Phone/Remote: ${tunnel.url}`);
+      const tunnel = await localtunnel({ port: HTTPS_PORT });
+      console.log(`🌐 Secure Public URL: ${tunnel.url}`);
       
       tunnel.on('close', () => {
         console.log("Tunnel closed");
