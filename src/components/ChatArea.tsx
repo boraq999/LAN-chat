@@ -176,7 +176,7 @@ export const ChatArea: React.FC = () => {
           const isMe = msg.sender === currentUser;
           let content = msg.content;
           let fileData = null;
-          if (msg.type === 'file') {
+          if (msg.type === 'file' || msg.type === 'voice') {
             try { fileData = JSON.parse(msg.content); } catch(e) {}
           }
 
